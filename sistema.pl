@@ -92,3 +92,48 @@ pergunta(7, "Voce gosta de montar ou mexer em hardware, sensores ou dispositivos
 pergunta(8, "Voce gostaria de aprofundar em logica para competir em desafios de programacao ou olimpiadas?", raciocinio_logico).
 pergunta(9, "Voce gostaria de trabalhar com dados, planilhas e graficos para encontrar padroes escondidos?", matematica_estatistica).
 pergunta(10, "Voce se sente animado em criar jogos, apps ou sistemas do zero via programacao?", programacao).
+
+
+% Motor de Inferencia
+:- dynamic resposta/2.
+
+% util
+somar_lista([], 0).
+somar_lista([h|t], s) :- somar_lista(t, r), s is h + r.
+
+% pontuacao por trilha
+calcular_pontuacao_trilha(trilha, p) :-
+    findall(peso,
+        ( perfil(trilha, carac, peso),
+          pergunta(id, _txt, carac),
+          resposta(id, s)
+        ),
+        pesos),
+    somar_lista(pesos, p).
+
+calcula_pontuacao(trilha, p, _ctx) :- calcular_pontuacao_trilha(trilha, p).
+
+% lista (Trilha, Pontuacao) sem ordenar
+todas_pontuacoes(tuplas_tp) :-
+    findall((t, p),
+        ( trilha(t, _), calcular_pontuacao_trilha(t, p) ),
+        tuplas_tp).
+
+% ordenacao decrescente por pontuacao
+comparar_tp_desc(delta, (_T1,P1), (_T2,P2)) :- compare(delta, P2, P1).
+
+ranking_trilha_pontuacao(tuplas_ordenadas) :-
+    todas_pontuacoes(tuplas),
+    predsort(comparar_tp_desc, tuplas, tuplas_ordenadas).
+
+recomenda(ranking_ordenado) :-
+    ranking_trilha_pontuacao(ranking_ordenado).
+
+recomenda(trilhas_topo, pontuacao_maxima) :-
+    ranking_trilha_pontuacao([(t1,pmax)|resto]),
+    pontuacao_maxima = pmax,
+    findall(t, member((t,pmax), [(t1,pmax)|resto]), trilhas_topo).
+
+recomenda_trilha(trilha_escolhida, pontuacao_maxima) :-
+    ranking_trilha_pontuacao([(trilha_escolhida, pontuacao_maxima)|_]).
+
